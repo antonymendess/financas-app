@@ -1,0 +1,4 @@
+{
+  "regions": ["gru1"],
+  "crons": [{ "path": "/cron/keepalive", "schedule": "0 12 * * *" }]
+}

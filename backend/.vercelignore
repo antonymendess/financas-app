@@ -1,0 +1,10 @@
+# Arquivos que não precisam ir para a Vercel Function
+tests/
+scripts/
+sql/
+.env
+venv/
+.venv/
+__pycache__/
+requirements-dev.txt
+pytest.ini

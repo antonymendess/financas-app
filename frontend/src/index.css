@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/* Tokens de cor. Padrão = tema escuro; o claro sobrescreve as mesmas variáveis
+   (escolha em lib/tema.js: data-tema="claro" | "escuro", ou segue o sistema). */
+@theme {
+  --color-fundo: #0a0a0a;
+  --color-painel: #111111;
+  --color-painel-2: #191919;
+  --color-borda: #262626;
+  --color-texto: #fafafa;
+  --color-suave: #a3a3a3;
+  --color-apagado: #737373;
+  /* Ação principal: preto no tema claro, branco no escuro */
+  --color-destaque: #fafafa;
+  --color-sobre-destaque: #0a0a0a;
+  /* Séries dos gráficos e destaques informativos */
+  --color-receita: #22a06b;
+  --color-despesa: #e5663a;
+  --color-saldo: #5b9cf0;
+  /* Status: sempre acompanhados de ícone ou texto */
+  --color-positivo: #4ade80;
+  --color-negativo: #f87171;
+  --color-alerta: #fbbf24;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  :root[data-tema="claro"] {
+    color-scheme: light;
+    --color-fundo: #fafafa;
+    --color-painel: #ffffff;
+    --color-painel-2: #f4f4f5;
+    --color-borda: #e4e4e7;
+    --color-texto: #0a0a0a;
+    --color-suave: #52525b;
+    --color-apagado: #71717a;
+    --color-destaque: #0a0a0a;
+    --color-sobre-destaque: #fafafa;
+    --color-receita: #15803d;
+    --color-despesa: #c2410c;
+    --color-saldo: #2563eb;
+    --color-positivo: #16a34a;
+    --color-negativo: #dc2626;
+    --color-alerta: #b45309;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-tema="escuro"]) {
+      color-scheme: light;
+      --color-fundo: #fafafa;
+      --color-painel: #ffffff;
+      --color-painel-2: #f4f4f5;
+      --color-borda: #e4e4e7;
+      --color-texto: #0a0a0a;
+      --color-suave: #52525b;
+      --color-apagado: #71717a;
+      --color-destaque: #0a0a0a;
+      --color-sobre-destaque: #fafafa;
+      --color-receita: #15803d;
+      --color-despesa: #c2410c;
+      --color-saldo: #2563eb;
+      --color-positivo: #16a34a;
+      --color-negativo: #dc2626;
+      --color-alerta: #b45309;
+    }
+  }
+}
+
+html,
+body {
+  /* Proteção: nada deve gerar rolagem para o lado no celular */
+  overflow-x: clip;
+  background: var(--color-fundo);
+  color: var(--color-texto);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+/* Inputs com aparência consistente no iOS/Android */
+input,
+select,
+textarea {
+  font-size: 16px; /* evita o zoom automático do iPhone ao focar */
+}
+
+:root[data-tema="escuro"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+}
+
+/* Espaço para a barra inferior do celular (respeita a área segura do iPhone) */
+@utility pb-seguro {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
