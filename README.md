@@ -1,175 +1,214 @@
-# Controle Financeiro Pessoal
+# Controle Financeiro
 
-Aplicação web *mobile-first* (instalável como PWA) para controle de finanças pessoais:
-contas fixas e parceladas, faturas de cartão, receitas, comissões de vendas, anotações,
-metas de economia e um simulador de cenários.
+App web para organizar as finanças da casa: contas fixas e parceladas, faturas de cartão,
+salários, comissões, metas de economia e uma previsão de quanto vai sobrar no fim do mês.
+Funciona no celular e pode ser instalado como aplicativo (PWA).
 
-**Demo:** em breve (dados fictícios)
+**Demo:** <https://financas-app-frontend.vercel.app>
 
-## Funcionalidades
+| Login | Senha |
+|-------|-------|
+| `demo@exemplo.com` | `123456` |
 
-- **Visão geral do mês**: saldo previsto, contas a pagar com marcação de pagamento,
-  gráfico de receitas × despesas dos próximos 12 meses e despesas por categoria.
-- **Despesas**: contas fixas ou parceladas, com cancelamento a partir de uma data e
-  acompanhamento de quanto ainda falta pagar.
-- **Cartões**: gastos avulsos e parcelados distribuídos na fatura correta conforme os
-  dias de fechamento e vencimento de cada cartão.
-- **Receitas**: recorrentes (salário) ou pontuais.
-- **Comissões e negociações**: comissões parceladas com controle de recebimento e um
-  funil de negociações que, ao fechar, vira comissão.
-- **Anotações**: lembretes e dívidas informais, com interpretação de texto livre
-  (data e valor) e opção de somar no saldo do mês.
-- **Metas (cofrinho)**: quanto quero juntar e até quando; os valores guardados são
-  anotados à parte e não mexem no saldo. Mostra progresso com marcos, ritmo médio,
-  previsão de conclusão, quanto guardar por mês para chegar na data e meses seguidos
-  guardando.
-- **Conferência com o banco**: informe o saldo real (por pessoa ou tudo junto) e o app
-  calcula quanto deve sobrar no fim do mês a partir dele, somando o que ainda vai entrar e
-  descontando o que falta pagar. Os gastos pequenos não anotados já estão no saldo.
-- **Filtros no Início**: por pessoa (Todos / cada pessoa / Conjunto) e visão por período
-  (vários meses somados, com maiores despesas, categorias e cada pessoa no período).
-- **Pessoas da casa**: cada receita, conta, cartão e comissão pode ser de uma pessoa ou do
-  "Conjunto". O painel mostra quanto cada um recebe, gasta e quanto sobra depois da sua parte
-  nas contas conjuntas (divididas proporcionalmente à renda).
-- **Categorias**: criar, renomear e excluir (movendo os lançamentos para outra). "Outros"
-  é a padrão do sistema e fica protegida. Dá para criar uma categoria direto nos formulários.
-- **Simulador**: orçamento, rendimento de investimentos com juros compostos e cálculo de
-  aporte para uma meta, sem afetar os dados reais.
+Os dados da demo são fictícios e voltam ao estado original todo dia. Pode mexer à vontade.
 
-## Stack
+## Duas versões
 
-| Camada    | Tecnologias                                                         |
-|-----------|---------------------------------------------------------------------|
-| Frontend  | React, Vite, Tailwind CSS, Recharts, React Router, PWA              |
-| Backend   | Python, FastAPI, SQLAlchemy 2, Pydantic 2                           |
-| Banco     | PostgreSQL (Supabase), migrações SQL versionadas                    |
-| Auth      | Supabase Auth (JWT validado na API via JWKS)                        |
-| Deploy    | Vercel (frontend estático + backend como Vercel Function, cron)     |
-| Testes    | pytest                                                              |
+Este repositório é a versão pública do projeto, feita para portfólio. O app que eu uso de
+verdade com a minha família roda à parte, num repositório privado, com outro banco de dados e
+outro endereço, porque guarda nossos dados financeiros reais.
 
-```
-/backend   API REST (FastAPI) publicada como Vercel Function
-/frontend  SPA em React
-```
+O código é o mesmo. O que muda é o ambiente:
 
-## Arquitetura e decisões
+|               | Versão pessoal                     | Esta demo                                  |
+|---------------|------------------------------------|--------------------------------------------|
+| Repositório   | privado                            | público                                    |
+| Banco         | projeto Supabase próprio           | outro projeto Supabase, só com dados fictícios |
+| Cadastro      | só por convite                     | fechado, entra só o login de demonstração  |
+| Dados         | reais                              | recriados todo dia                         |
 
-- **Camadas no backend**: `routers` (HTTP) → `services` (regras de negócio) →
-  `repositories` (ORM e consultas). Validação de entrada e saída com Pydantic e
-  mensagens de erro traduzidas para português.
-- **Projeção em memória**: os dados financeiros são carregados com um número fixo de
-  consultas e o cálculo de cada mês é feito por funções puras
-  ([`services/projecao.py`](backend/services/projecao.py)), o que torna a lógica
-  testável sem banco e evita consultas mês a mês.
-- **Serverless**: conexão via pooler do Supabase em modo transaction, sem pool local
-  (`NullPool`) e sem prepared statements.
-- **Fuso horário**: "hoje" é sempre calculado em `America/Sao_Paulo`, independente do
-  servidor.
-- **Cron**: uma rota protegida por segredo (`/cron/keepalive`) é chamada diariamente pela
-  Vercel para manter o banco ativo.
+As duas ficam no ar o tempo todo. Uma rotina agendada na Vercel chama a API uma vez por dia
+para o Supabase não pausar o banco por inatividade e, na demo, aproveita para recriar os
+dados fictícios.
 
-## Segurança
+## Por que eu fiz
 
-- **Multiusuário por casas**: cada cliente é uma casa com até 2 logins; gente nova só
-  entra por link de convite. A API aceita tokens assinados pelo Supabase de quem é
-  membro de uma casa. `ALLOWED_EMAIL` é o administrador (convida clientes novos).
-- **Isolamento em duas travas**: a aplicação filtra toda consulta pela casa
-  (`core/escopo.py`) e o banco aplica Row Level Security por casa para o papel
-  `app_api` (`sql/011`). Testes em `tests/integracao/test_isolamento.py` e `test_rls.py`.
-- A chave pública do frontend não tem acesso direto ao banco; todo acesso passa pela API.
-- Credenciais exclusivamente em variáveis de ambiente; logs sem tokens nem valores de
-  consultas (`hide_parameters`).
-- CORS restrito ao domínio do frontend e cabeçalhos de segurança no site estático.
-- Documentação interativa da API desabilitada em produção.
+Eu controlava tudo numa planilha do Excel. Funcionava, mas toda vez que entrava uma compra
+parcelada no cartão ou uma comissão dividida em vários meses, eu tinha que mexer em fórmula e
+conferir mês a mês se estava certo. E a pergunta que eu mais queria responder, "quanto vai
+sobrar no fim do mês?", dava trabalho de calcular.
 
-## Regras de negócio
+Resolvi transformar a planilha num app de verdade, que eu uso no dia a dia com a minha
+família. Foi também a forma que encontrei de praticar back-end com Python num projeto real,
+com regra de negócio de verdade, autenticação, banco em produção e testes.
 
-- **Despesas**: uma linha por compromisso. Fixa (sem nº de parcelas) entra todo mês
-  desde a 1ª cobrança; parcelada entra até completar as parcelas. Com data de
-  cancelamento, deixa de entrar a partir do primeiro vencimento posterior.
-- **Quem paga**: a conta tem um responsável no cadastro, e dá para trocar quem paga
-  só num mês ou de um mês em diante (ex.: aluguel revezando). Os meses anteriores,
-  inclusive os já pagos, não mudam.
-- **Fatura do cartão**: compra até o dia de fechamento entra na fatura que fecha naquele
-  mês; depois do fechamento, na seguinte. O mês considerado é o do vencimento (se o dia
-  de vencimento for menor ou igual ao de fechamento, ele cai no mês seguinte).
-- **Despesa paga no cartão** aparece dentro da fatura daquele cartão e é contada uma
-  única vez no total do mês. Assinaturas viram despesas fixas com o cartão como forma
-  de pagamento.
-- **Comissões**: valor = implantação × percentual, em parcelas iguais (centavos na
-  última). A 1ª parcela cai na data informada e as seguintes no dia 15 dos meses
-  seguintes ([`services/regras_comissao.py`](backend/services/regras_comissao.py)).
-  Uma parcela recebida pode gerar uma receita do tipo Comissão sem ser contada duas vezes.
-- **Anotações**: somam no saldo apenas quando marcadas para isso e com data e valor.
-  Vencidas e não concluídas continuam aparecendo no mês atual.
-- **Metas**: o valor do mês é calculado pela regra da meta sobre a sobra (receitas −
-  despesas) ou sobre as receitas. Valores guardados ficam registrados à parte e não
-  entram como despesa.
+## O que dá para fazer
 
-## Estrutura
+- **Início:** saldo previsto do mês, contas a pagar com marcação de pago, gráfico de
+  receitas × despesas dos próximos 12 meses e gastos por categoria. Dá para filtrar por pessoa
+  e ver vários meses somados.
+- **Despesas:** contas fixas (aluguel, internet) ou parceladas. Uma conta pode ser cancelada a
+  partir de uma data, e o app mostra quanto ainda falta pagar das parceladas.
+- **Quem paga:** cada conta tem um responsável, e dá para trocar quem paga só num mês ou de um
+  mês em diante (ex.: aluguel revezando entre o casal).
+- **Cartões:** cada compra cai na fatura certa conforme o dia de fechamento e de vencimento
+  do cartão. Compras parceladas aparecem em cada fatura até terminar.
+- **Receitas:** salários (todo mês) e entradas pontuais.
+- **Comissões:** comissões parceladas com controle do que já foi recebido, e um funil de
+  negociações que vira comissão quando fecha.
+- **Anotações:** lembretes e dívidas informais ("pagar João dia 20 R$ 50"). O app entende a
+  data e o valor do texto e pode somar no saldo do mês.
+- **Metas (cofrinho):** quanto quero juntar e até quando. Mostra o progresso, o ritmo médio e
+  quanto guardar por mês para chegar na data.
+- **Conferência com o banco:** informo o saldo real da conta e o app calcula quanto deve
+  sobrar no fim do mês a partir dele.
+- **Pessoas da casa:** cada lançamento pode ser de uma pessoa ou do "Conjunto". As contas
+  conjuntas são divididas proporcionalmente à renda de cada um.
+- **Simulador:** orçamento, juros compostos e quanto aplicar por mês para chegar numa meta,
+  sem mexer nos dados reais.
+
+## Como usar a demo
+
+1. Entre com o login e a senha acima.
+2. No **Início**, troque o mês no topo para ver a previsão dos próximos meses. Toque no
+   círculo ao lado de uma conta para marcar como paga.
+3. Em **Despesas**, cadastre uma conta parcelada e veja ela aparecer nos meses seguintes.
+4. Em **Cartões**, lance uma compra em 3x e veja em qual fatura cada parcela cai.
+5. Em **Metas**, guarde um valor na "Viagem de férias" e veja o progresso mudar.
+6. No **Simulador**, teste quanto um valor rende com juros compostos.
+
+No celular, Cartões, Metas e Simulador ficam no menu **Mais**. Para instalar como app, use
+"Adicionar à tela inicial" no navegador.
+
+## Tecnologias
+
+| Parte     | O que usei                                               |
+|-----------|----------------------------------------------------------|
+| Back-end  | Python, FastAPI, SQLAlchemy 2, Pydantic 2                |
+| Front-end | React, Vite, Tailwind CSS, Recharts, React Router        |
+| Banco     | PostgreSQL no Supabase, com migrações SQL versionadas    |
+| Login     | Supabase Auth, com o token validado na API               |
+| Deploy    | Vercel (site estático + API como função serverless)      |
+| Testes    | pytest, com PostgreSQL embutido nos testes de integração |
+
+## Como funciona por dentro
+
+### Organização do back-end
 
 ```
-backend/
-  main.py            app FastAPI, CORS e registro das rotas
-  core/              configuração, conexão, autenticação (JWT) e erros
-  routers/           endpoints REST
-  schemas/           validação de entrada/saída (Pydantic)
-  services/          regras de negócio (funções puras onde possível)
-  repositories/      modelos ORM e consultas (SQLAlchemy)
-  scripts/           migrações, backup e importação de planilhas .xlsx
-  sql/               migrações (001 a 012)
-  tests/             pytest
-frontend/src/
-  pages/             telas
-  components/        layout, formulários e componentes de UI
-  contexts/          autenticação e dados compartilhados
-  lib/               cliente da API e formatação pt-BR
+routers/       recebem a requisição HTTP e devolvem a resposta
+services/      regras de negócio (cálculos de fatura, parcelas, projeção do mês)
+repositories/  modelos do banco e consultas
+schemas/       validação dos dados que entram e saem (Pydantic)
+core/          configuração, conexão com o banco e autenticação
 ```
 
-Principais endpoints (todos autenticados, exceto `/health`):
-`GET /dashboard`, `GET /projecao`, `GET /periodo`, `GET /opcoes`, `GET /metas/painel`, CRUD em
-`/despesas`, `/receitas`, `/comissoes`, `/cartoes`, `/gastos-cartao`, `/anotacoes` e
-`/metas`, `/responsaveis`, `/conferencias` e `/categorias`.
+O cálculo do mês fica em [`services/projecao.py`](backend/services/projecao.py). Os dados são
+carregados com poucas consultas e o cálculo é feito por funções puras, sem acessar o banco.
+Isso deixa a lógica fácil de testar e evita uma consulta para cada mês.
 
-## Execução local
+### Login
 
-Requisitos: Python 3.12+, Node.js 20+ e um projeto Supabase com as migrações de
-[`backend/sql`](backend/sql) aplicadas em ordem.
+1. A tela de login manda e-mail e senha direto para o Supabase Auth, que confere a senha e
+   devolve um token JWT.
+2. O front guarda o token e envia em toda chamada à API no cabeçalho
+   `Authorization: Bearer <token>`.
+3. A API confere a assinatura do token com a chave pública do Supabase, a validade e o
+   projeto de origem ([`core/auth.py`](backend/core/auth.py)). Se algo não bate, responde 401.
+4. Com o usuário identificado, a API descobre a qual casa ele pertence e só trabalha com os
+   dados dela.
+
+A API nunca vê a senha, e o front nunca acessa o banco direto: tudo passa pela API.
+
+### Separação dos dados entre usuários
+
+Cada família é uma "casa", e o isolamento tem duas travas:
+
+- **Na aplicação:** toda consulta recebe automaticamente o filtro da casa do usuário logado
+  ([`core/escopo.py`](backend/core/escopo.py)).
+- **No banco:** Row Level Security do PostgreSQL. A API conecta com um usuário do banco que só
+  enxerga as linhas da casa informada ([`sql/011_rls_por_casa.sql`](backend/sql/011_rls_por_casa.sql)).
+  Mesmo que o código esqueça um filtro, o banco não devolve dados de outra casa.
+
+As duas travas têm testes próprios em `tests/integracao/test_isolamento.py` e `test_rls.py`.
+
+### Outros cuidados
+
+- Credenciais só em variáveis de ambiente.
+- CORS liberado só para o domínio do front.
+- Documentação automática da API desligada em produção.
+- Logs sem tokens e sem valores das consultas.
+- "Hoje" sempre calculado no fuso de São Paulo, independente do servidor.
+- Conexão pensada para serverless: usa o pooler do Supabase e não mantém pool local.
+
+### Regras de negócio que deram mais trabalho
+
+- **Fatura do cartão:** compra até o dia de fechamento entra na fatura daquele mês; depois do
+  fechamento, na seguinte. Se o vencimento é antes do fechamento, a fatura vence no mês
+  seguinte.
+- **Conta paga no cartão** (ex.: streaming) aparece dentro da fatura e é contada uma vez só.
+- **Comissões:** valor da venda × percentual, dividido em parcelas iguais, com os centavos
+  na última. A primeira cai na data informada e as outras no dia 15 dos meses seguintes.
+- **Quem paga:** trocar o responsável de uma conta não altera os meses que já passaram.
+
+## Rodando na sua máquina
+
+Precisa de Python 3.12+, Node.js 20+ e um projeto no Supabase.
 
 ```bash
-# backend
+# back-end
 cd backend
-python -m venv venv && source venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env
+cp .env.example .env          # preencha com os dados do seu Supabase
+python -m scripts.migrar      # cria as tabelas
 uvicorn main:app --reload
 
-# frontend
+# front-end (outro terminal)
 cd frontend
 cp .env.example .env
 npm install
 npm run dev
 ```
 
-Variáveis do backend: `DATABASE_URL`, `DATABASE_URL_APP`, `DATABASE_URL_SISTEMA`, `SUPABASE_URL`, `ALLOWED_EMAIL`, `FRONTEND_URL`,
-`CRON_SECRET`. Do frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
-`VITE_API_URL`.
-
-Testes (os de `tests/integracao` sobem um PostgreSQL embutido via `pgserver`):
+Para ter dados de exemplo, crie um usuário em Authentication → Users no Supabase, coloque o
+e-mail dele em `DEMO_EMAIL` no `.env` e rode:
 
 ```bash
-cd backend && pytest
+python -m scripts.demo
 ```
 
-Migrações e backup (dentro de `backend`, usando o `DATABASE_URL` do `.env` ou `--url`):
+### Testes
 
 ```bash
-python -m scripts.migrar --status            # aplicadas e pendentes
-python -m scripts.migrar                     # aplica as pendentes (pede confirmação)
-python -m scripts.backup salvar              # dados em CSV na pasta backups/
-python -m scripts.backup restaurar backups/AAAA-MM-DD_HHMMSS --url URL_DE_TESTES
+cd backend
+pytest
+```
+
+Os testes de integração sobem um PostgreSQL embutido (pacote `pgserver`), sem precisar de
+Docker, e aplicam as migrações do zero.
+
+## Estrutura
+
+```
+backend/
+  main.py        app FastAPI e registro das rotas
+  core/          configuração, conexão, autenticação e isolamento por casa
+  routers/       endpoints
+  schemas/       validação (Pydantic)
+  services/      regras de negócio
+  repositories/  modelos e consultas (SQLAlchemy)
+  scripts/       migrações, backup, dados da demo e importação de planilhas
+  sql/           migrações do banco
+  tests/         testes
+frontend/src/
+  pages/         telas
+  components/    componentes de interface
+  contexts/      sessão do usuário e dados compartilhados
+  lib/           cliente da API e formatação
 ```
 
 ## Autor
 
-Desenvolvido por **Antony** — [github.com/antonymendess](https://github.com/antonymendess)
+Antony Mendes, estudante de back-end com Python.
+[github.com/antonymendess](https://github.com/antonymendess)
